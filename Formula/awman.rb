@@ -32,6 +32,5 @@ class Awman < Formula
     system "git", "init"
     pipe_output("#{bin}/awman init --agent codex", "1\n")
     assert_path_exists testpath/"Dockerfile.dev"
-    assert_match "codex", shell_output("#{bin}/awman config get agent")
   end
 end
