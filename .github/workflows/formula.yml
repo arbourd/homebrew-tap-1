@@ -1,0 +1,46 @@
+name: formula
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    env:
+      HOMEBREW_GITHUB_ACTIONS: 1
+      HOMEBREW_NO_ANALYTICS: 1
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+      HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: Homebrew/actions/setup-homebrew@ceec4e8419bb3c97ce96e9dda7738499ed5f869d # 2026.11.14.1
+
+      - name: Tap repository
+        run: |
+          mkdir -p "$(brew --repository)/Library/Taps/prettysmartdev"
+          ln -s "$PWD" "$(brew --repository)/Library/Taps/prettysmartdev/homebrew-tap"
+
+      - name: Test formulae
+        run: |
+          for f in Formula/*.rb; do
+            name=prettysmartdev/tap/$(basename "$f" .rb)
+            brew style -v "$name"
+            brew audit --strict --online --except=version "$name"
+            brew install -v "$name"
+            brew test -v "$name"
+          done
